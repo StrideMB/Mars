@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from model.base.components import Conv, C2f
 
 
 class Neck(nn.Module):
@@ -11,7 +13,16 @@ class Neck(nn.Module):
         self.kernelSize = 3
         self.stride = 2
 
-        raise NotImplementedError("Neck::__init__")
+        self.topdown1 = C2f(int(768 * w), int(256 * w), n, shortcut=False)
+        self.topdown2 = C2f(int(512 * w * (1 + r)), int(512 * w), n, shortcut=False)
+
+        self.downsample0 = Conv(int(256 * w), int(256 * w), self.kernelSize, self.stride)
+        self.downsample1 = Conv(int(512 * w), int(512 * w), self.kernelSize, self.stride)
+
+        self.bottomup0 = C2f(int(768 * w), int(512 * w), n, shortcut=False)
+        self.bottomup1 = C2f(int(512 * w * (1 + r)), int(512 * w * r), n, shortcut=False)
+
+        # raise NotImplementedError("Neck::__init__")
 
     def forward(self, feat1, feat2, feat3):
         """
@@ -25,4 +36,19 @@ class Neck(nn.Module):
             Y: (B, 512 * w, 40, 40)
             Z: (B, 512 * w * r, 20, 20)
         """
-        raise NotImplementedError("Neck::forward")
+        up_feat3 = F.interpolate(feat3, scale_factor=2, mode="nearest")
+        up_feat3_concat_feat2 = torch.cat((up_feat3, feat2), dim=1)
+        C = self.topdown2(up_feat3_concat_feat2)
+        up_C = F.interpolate(C, scale_factor=2, mode="nearest")
+        up_C_concat_feat1 = torch.cat((up_C, feat1), dim=1)
+        X = self.topdown1(up_C_concat_feat1)
+        down_X = self.downsample0(X)
+        down_X_concat_C = torch.cat((down_X, C), dim=1)
+        Y = self.bottomup0(down_X_concat_C)
+        down_Y = self.downsample1(Y)
+        down_Y_concat_feat3 = torch.cat((down_Y, feat3), dim=1)
+        Z = self.bottomup1(down_Y_concat_feat3)
+
+        return C, X, Y, Z
+
+        #raise NotImplementedError("Neck::forward")

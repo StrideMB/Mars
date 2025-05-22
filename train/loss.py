@@ -107,7 +107,8 @@ class DetectionLoss(object):
         gtLabels, gtBboxes = targets.split((1, 4), 2)  # cls=(batchSize, maxCount, 1), xyxy=(batchSize, maxCount, 4)
         gtMask = gtBboxes.sum(2, keepdim=True).gt_(0.0)
 
-        raise NotImplementedError("DetectionLoss::__call__")
+
+        # raise NotImplementedError("DetectionLoss::__call__")
 
         loss[0] *= self.mcfg.lossWeights[0]  # box
         loss[1] *= self.mcfg.lossWeights[1]  # cls
