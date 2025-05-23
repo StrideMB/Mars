@@ -3,7 +3,8 @@ from engine.engine import MarsEngine
 
 
 if __name__ == "__main__":
-    mode = "pipe"
+    #mode = "pipe"
+    mode = "eval"
     nobuf = False
 
     for i in range(len(sys.argv)):

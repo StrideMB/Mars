@@ -15,21 +15,21 @@ class Backbone(nn.Module):
         self.stem = Conv(self.imageChannel, int(64 * w), self.kernelSize, self.stride)
         self.stage1 = nn.Sequential(
             Conv(int(64 * w), int(128 * w), self.kernelSize, self.stride),
-            C2f(int(128 * w), int(128 * w), n[0], shortcut=True),
+            C2f(int(128 * w), int(128 * w), n, shortcut=True),
         )
         self.stage2 = nn.Sequential(
             Conv(int(128 * w), int(256 * w), self.kernelSize, self.stride),
-            C2f(int(256 * w), int(256 * w), n[1], shortcut=True),
+            C2f(int(256 * w), int(256 * w), n * 2, shortcut=True),
         )
         self.stage3 = nn.Sequential(
             Conv(int(256 * w), int(512 * w), self.kernelSize, self.stride),
-            C2f(int(512 * w), int(512 * w), n[2], shortcut=True),
+            C2f(int(512 * w), int(512 * w), n * 2, shortcut=True),
         )
         self.stage4 = nn.Sequential(
-            SPPF(int(512 * w), int(512 * w), 5),
-            C2f(int(512 * w), int(512 * w * r), n[3], shortcut=True),
+            Conv(int(512 * w), int(512 * w * r), self.kernelSize, self.stride),
+            C2f(int(512 * w * r), int(512 * w * r), n, shortcut=True),
+            SPPF(int(512 * w * r), int(512 * w * r), 5),
         )
-        self.sppf = SPPF(int(512 * w), int(512 * w), 5)
 
         # raise NotImplementedError("Backbone::__init__")
 

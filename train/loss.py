@@ -108,25 +108,67 @@ class DetectionLoss(object):
         gtMask = gtBboxes.sum(2, keepdim=True).gt_(0.0)
 
         ####
+        #target_labels, target_bboxes, target_scores, fg_mask, target_gt_idx = self.assigner(
+            #predClassScores, predBoxDistribution, self.model.anchorPoints, gtLabels, gtBboxes, gtMask
+        #)
+
+        #target_scores_sum = max(target_scores.sum(), 1.0)
+
+        ## Cls loss
+        #loss[1] = self.bce(predClassScores, target_scores).sum() / target_scores_sum
+
+        ## Bbox loss
+        #if fg_mask.sum():
+            #target_bboxes /= self.layerStrides
+            #loss[0], loss[2] = self.bboxLoss(
+                #predBoxDistribution, predBoxDistribution[fg_mask], self.model.anchorPoints, target_bboxes, target_scores, target_scores_sum, fg_mask
+            #)
+        
         # assigner
-        assign_result = self.assigner.(
-            predClassScores.detach(), predBoxDistribution.detach(), gtLabels, gtBboxes, self.model.anchorPoints, self.model.anchorStrides
-        )
-        fg_mask, target_labels, target_bboxes, target_scores, target_scores_sum = assign_result
+        #assign_result = self.assigner(
+            #predClassScores.detach(), predBoxDistribution.detach(), gtLabels, gtBboxes, self.model.anchorPoints, self.model.anchorStrides
+        #)
+        #fg_mask, target_labels, target_bboxes, target_scores, target_scores_sum = assign_result
 
-        loss[0], loss[1] = self.bboxLoss(
-            predBoxDistribution,
-            bboxDecode(self.model.anchorPoints, predBoxDistribution, self.mcfg.regMax),
-            self.model.anchorPoints,
-            target_bboxes,
-            target_scores,
-            target_scores_sum,
-            fg_mask
-        )
+        #loss[0], loss[1] = self.bboxLoss(
+            #predBoxDistribution,
+            #bboxDecode(self.model.anchorPoints, predBoxDistribution, self.mcfg.regMax),
+            #self.model.anchorPoints,
+            #target_bboxes,
+            #target_scores,
+            #target_scores_sum,
+            #fg_mask
+        #)
 
-        pred_class_fg = predClassScores[fg_mask]
-        target_class_fg = target_labels[fg_mask].long().squeeze(-1)
-        loss[1] = self.bce(pred_class_fg, F.one_hot(target_class_fg, self.mcfg.nc).float()).sum() / target_scores_sum
+        #pred_class_fg = predClassScores[fg_mask]
+        #target_class_fg = target_labels[fg_mask].long().squeeze(-1)
+        #loss[1] = self.bce(pred_class_fg, F.one_hot(target_class_fg, self.mcfg.nc).float()).sum() / target_scores_sum
+
+        # anchor points
+        anchor_points = self.model.anchorPoints
+        proj = self.model.proj
+
+        ## 解码预测框
+        predBboxes = bboxDecode(anchor_points, predBoxDistribution, proj, xywh=False)
+
+        ## 正负样本分配
+        target_labels, target_bboxes, target_scores, fg_mask, _ = self.assigner(
+            predClassScores, predBboxes, anchor_points, gtLabels, gtBboxes, gtMask
+        )
+        target_scores_sum = max(target_scores.sum(), 1.0)
+
+        ## 损失计算
+        if fg_mask.sum():
+            loss_box, loss_dfl = self.bboxLoss(
+                predBoxDistribution, predBboxes, anchor_points, target_bboxes, target_scores, target_scores_sum, fg_mask
+            )
+            loss[0] = loss_box
+            loss[2] = loss_dfl
+
+        ## 分类损失
+        loss_cls = self.bce(predClassScores[fg_mask], target_scores[fg_mask]).sum() / target_scores_sum
+        loss[1] = loss_cls
+
         ####
         # raise NotImplementedError("DetectionLoss::__call__")
 

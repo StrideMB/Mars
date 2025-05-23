@@ -36,16 +36,18 @@ class Neck(nn.Module):
             Y: (B, 512 * w, 40, 40)
             Z: (B, 512 * w * r, 20, 20)
         """
-        up_feat3 = F.interpolate(feat3, scale_factor=2, mode="nearest")
+        up_feat3 = F.interpolate(feat3, size=feat2.shape[2:], mode="nearest")
         up_feat3_concat_feat2 = torch.cat((up_feat3, feat2), dim=1)
         C = self.topdown2(up_feat3_concat_feat2)
-        up_C = F.interpolate(C, scale_factor=2, mode="nearest")
+        up_C = F.interpolate(C, size=feat1.shape[2:], mode="nearest")
         up_C_concat_feat1 = torch.cat((up_C, feat1), dim=1)
         X = self.topdown1(up_C_concat_feat1)
         down_X = self.downsample0(X)
         down_X_concat_C = torch.cat((down_X, C), dim=1)
         Y = self.bottomup0(down_X_concat_C)
         down_Y = self.downsample1(Y)
+        if down_Y.shape[2:] != feat3.shape[2:]:
+            down_Y = F.interpolate(down_Y, size=feat3.shape[2:], mode="nearest")
         down_Y_concat_feat3 = torch.cat((down_Y, feat3), dim=1)
         Z = self.bottomup1(down_Y_concat_feat3)
 
