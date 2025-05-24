@@ -149,7 +149,7 @@ class DetectionLoss(object):
         proj = self.model.proj
 
         ## 解码预测框
-        predBboxes = bboxDecode(anchor_points, predBoxDistribution, proj, xywh=False)
+        predBboxes = bboxDecode(anchor_points, predBoxDistribution, proj, xywh=True)
         #print("predClassScores before assigner has nan:", torch.isnan(predClassScores).any())
         ## 正负样本分配
         target_labels, target_bboxes, target_scores, fg_mask, _ = self.assigner(

@@ -27,7 +27,8 @@ def mcfg(tags):
     if "full" in tags:
         mcfg.modelName = "base"
         mcfg.maxEpoch = 200
-        mcfg.backboneFreezeEpochs = [x for x in range(0, 100)]
+        #mcfg.backboneFreezeEpochs = [x for x in range(0, 100)]
+        mcfg.backboneFreezeEpochs = []
 
     if "teacher" in tags:
         mcfg.modelName = "base"

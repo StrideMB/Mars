@@ -5,7 +5,7 @@ from engine.engine import MarsEngine
 if __name__ == "__main__":
     mode = "pipe"
     #mode = "eval"
-    nobuf = True
+    nobuf = False
 
     for i in range(len(sys.argv)):
         arg = sys.argv[i]

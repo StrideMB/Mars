@@ -53,7 +53,7 @@ class ModelConfig(object):
         # eval setup
         self.testSelectedClasses = None
         self.minIou = 0.5
-        self.paintImages = False
+        self.paintImages = True
 
         # dataset splits
         self.trainSplitName = "train"
