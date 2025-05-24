@@ -20,27 +20,13 @@ class Conv(nn.Module):
     default_act = SiLU()
     def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
         super().__init__()
-        print("autopad:", autopad(k, p, d))
         self.conv   = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
         self.bn     = nn.BatchNorm2d(c2, eps=0.001, momentum=0.03, affine=True, track_running_stats=True)
         self.act    = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
 
-    #def forward(self, x):
-    #    return self.act(self.bn(self.conv(x)))
     def forward(self, x):
-        if torch.isnan(x).any():
-            print("[!] NaN found in Conv input")
-        print("Conv input min:", x.min().item(), "max:", x.max().item())
-        x = self.conv(x)
-        if torch.isnan(x).any():
-            print("[!] NaN found after Conv2d")
-        x = self.bn(x)
-        if torch.isnan(x).any():
-            print("[!] NaN found after BatchNorm2d")
-        x = self.act(x)
-        if torch.isnan(x).any():
-            print("[!] NaN found after Activation")
-        return x
+        return self.act(self.bn(self.conv(x)))
+    
     def forward_fuse(self, x):
         return self.act(self.conv(x))
 
@@ -53,15 +39,9 @@ class Bottleneck(nn.Module):
         self.cv2 = Conv(c_, c2, k[1], 1, g=g)
         self.add = shortcut and c1 == c2
 
-    #def forward(self, x):
-    #    return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
-    
     def forward(self, x):
-        out = self.cv2(self.cv1(x))
-        if torch.isnan(out).any():
-            print("[!] NaN found in Bottleneck output")
-        return x + out if self.add else out
-
+        return x + self.cv2(self.cv1(x)) if self.add else self.cv2(self.cv1(x))
+    
 
 class C2f(nn.Module):
     def __init__(self, c1, c2, n=1, shortcut=False, g=1, e=0.5):
@@ -73,16 +53,8 @@ class C2f(nn.Module):
 
     def forward(self, x):
         y = list(self.cv1(x).split((self.c, self.c), 1))
-        for i, m in enumerate(self.m):
-            y.append(m(y[-1]))
-            if torch.isnan(y[-1]).any():
-                print(f"[!] NaN found in C2f at index {i}")
-        #y.extend(m(y[-1]) for m in self.m)
-        #return self.cv2(torch.cat(y, 1))
-        out = self.cv2(torch.cat(y, 1))
-        if torch.isnan(out).any():
-            print("[!] NaN found in C2f output")
-        return out
+        y.extend(m(y[-1]) for m in self.m)
+        return self.cv2(torch.cat(y, 1))
 
 
 class SPPF(nn.Module):

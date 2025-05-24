@@ -72,12 +72,29 @@ class TaskAlignedAssigner(nn.Module):
         target_labels, target_bboxes, target_scores = self.get_targets(gt_labels, gt_bboxes, target_gt_idx, fg_mask)
 
         # Normalize
+        #align_metric *= mask_pos
+        #pos_align_metrics = align_metric.amax(dim=-1, keepdim=True)  # b, max_num_obj
+        #pos_overlaps = (overlaps * mask_pos).amax(dim=-1, keepdim=True)  # b, max_num_obj
+        #norm_align_metric = (align_metric * pos_overlaps / (pos_align_metrics + self.eps)).amax(-2).unsqueeze(-1)
+        #target_scores = target_scores * norm_align_metric
+        # Normalize
         align_metric *= mask_pos
-        pos_align_metrics = align_metric.amax(dim=-1, keepdim=True)  # b, max_num_obj
-        pos_overlaps = (overlaps * mask_pos).amax(dim=-1, keepdim=True)  # b, max_num_obj
-        norm_align_metric = (align_metric * pos_overlaps / (pos_align_metrics + self.eps)).amax(-2).unsqueeze(-1)
-        target_scores = target_scores * norm_align_metric
+        # 处理可能的NaN值
+        align_metric = torch.nan_to_num(align_metric, nan=0.0, posinf=0.0, neginf=0.0)
 
+        pos_align_metrics = align_metric.amax(dim=-1, keepdim=True)  # b, max_num_obj
+        pos_align_metrics = torch.nan_to_num(pos_align_metrics, nan=self.eps, posinf=1.0, neginf=self.eps)
+        pos_align_metrics = pos_align_metrics.clamp(min=self.eps)  # 确保不会除以0
+
+        pos_overlaps = (overlaps * mask_pos).amax(dim=-1, keepdim=True)  # b, max_num_obj
+        pos_overlaps = torch.nan_to_num(pos_overlaps, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # 安全地计算归一化指标
+        norm_align_metric = (align_metric * pos_overlaps / (pos_align_metrics + self.eps)).amax(-2).unsqueeze(-1)
+        norm_align_metric = torch.nan_to_num(norm_align_metric, nan=0.0, posinf=0.0, neginf=0.0)
+
+        # 安全地计算目标分数
+        target_scores = torch.nan_to_num(target_scores * norm_align_metric, nan=0.0, posinf=0.0, neginf=0.0)
         return target_labels, target_bboxes, target_scores, fg_mask.bool(), target_gt_idx
 
     def get_pos_mask(self, pd_scores, pd_bboxes, gt_labels, gt_bboxes, anc_points, mask_gt):
