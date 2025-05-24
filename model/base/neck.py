@@ -36,20 +36,37 @@ class Neck(nn.Module):
             Y: (B, 512 * w, 40, 40)
             Z: (B, 512 * w * r, 20, 20)
         """
+        def check_nan(tensor, name):
+            if torch.isnan(tensor).any():
+                print(f"[!] NaN found in neck.{name}")
         up_feat3 = F.interpolate(feat3, size=feat2.shape[2:], mode="nearest")
+        check_nan(up_feat3, "up_feat3")
         up_feat3_concat_feat2 = torch.cat((up_feat3, feat2), dim=1)
+        check_nan(up_feat3_concat_feat2, "up_feat3_concat_feat2")
+        print(f"up_feat3_concat_feat2 shape: {up_feat3_concat_feat2.shape}")
+        up_feat3_concat_feat2 *= 0.01
         C = self.topdown2(up_feat3_concat_feat2)
+        check_nan(C, "C")
         up_C = F.interpolate(C, size=feat1.shape[2:], mode="nearest")
+        check_nan(up_C, "up_C")
         up_C_concat_feat1 = torch.cat((up_C, feat1), dim=1)
+        check_nan(up_C_concat_feat1, "up_C_concat_feat1")
         X = self.topdown1(up_C_concat_feat1)
+        check_nan(X, "X")
         down_X = self.downsample0(X)
+        check_nan(down_X, "down_X")
         down_X_concat_C = torch.cat((down_X, C), dim=1)
+        check_nan(down_X_concat_C, "down_X_concat_C")
         Y = self.bottomup0(down_X_concat_C)
+        check_nan(Y, "Y")
         down_Y = self.downsample1(Y)
+        check_nan(down_Y, "down_Y")
         if down_Y.shape[2:] != feat3.shape[2:]:
             down_Y = F.interpolate(down_Y, size=feat3.shape[2:], mode="nearest")
         down_Y_concat_feat3 = torch.cat((down_Y, feat3), dim=1)
+        check_nan(down_Y_concat_feat3, "down_Y_concat_feat3")
         Z = self.bottomup1(down_Y_concat_feat3)
+        check_nan(Z, "Z")
 
         return C, X, Y, Z
 

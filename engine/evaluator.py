@@ -61,7 +61,8 @@ class MarsEvaluator(object):
             labelList.append(labels)
             tinfoList += tinfos
             rawImageList += rawImages
-
+        
+        print("predlist", predList)
         prediction = torch.cat(predList, axis=0).cpu()
         groundTruth = torch.cat(labelList, axis=0).cpu()
 

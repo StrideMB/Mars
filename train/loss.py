@@ -150,13 +150,18 @@ class DetectionLoss(object):
 
         ## 解码预测框
         predBboxes = bboxDecode(anchor_points, predBoxDistribution, proj, xywh=False)
-
+        print("predClassScores before assigner has nan:", torch.isnan(predClassScores).any())
         ## 正负样本分配
         target_labels, target_bboxes, target_scores, fg_mask, _ = self.assigner(
             predClassScores, predBboxes, anchor_points, gtLabels, gtBboxes, gtMask
         )
-        target_scores_sum = max(target_scores.sum(), 1.0)
 
+        target_scores_sum = max(target_scores.sum(), 1.0)
+        print("fg_mask.sum():", fg_mask.sum().item())
+        print("target_scores_sum:", target_scores_sum)
+        print("target_scores:", target_scores)
+        print("predClassScores[fg_mask]:", predClassScores[fg_mask])
+        print("target_bboxes[fg_mask]:", target_bboxes[fg_mask])
         ## 损失计算
         if fg_mask.sum():
             loss_box, loss_dfl = self.bboxLoss(
@@ -171,6 +176,7 @@ class DetectionLoss(object):
 
         ####
         # raise NotImplementedError("DetectionLoss::__call__")
+        print("loss[0]:", loss[0].item(), "loss[1]:", loss[1].item(), "loss[2]:", loss[2].item())
 
         loss[0] *= self.mcfg.lossWeights[0]  # box
         loss[1] *= self.mcfg.lossWeights[1]  # cls

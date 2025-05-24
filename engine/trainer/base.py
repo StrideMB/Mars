@@ -130,6 +130,11 @@ class MarsBaseTrainer(object):
         log.cyan("Mars trainer running...")
 
         model, startEpoch = self.initModel()
+        
+        for name, param in model.named_parameters():
+            if torch.isnan(param).any() or torch.isinf(param).any():
+                print(f"[!] NaN or Inf in parameter: {name}")
+
         if startEpoch >= self.mcfg.maxEpoch:
             log.inf("Training skipped")
             return
