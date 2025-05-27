@@ -103,21 +103,9 @@ class YoloModel(nn.Module):
             yo: (B, nc + regMax * 4, 40, 40)
             zo: (B, nc + regMax * 4, 20, 20)
         """
-        #def check_nan(tensor, name):
-            #if torch.isnan(tensor).any():
-                #print(f"[!] NaN found in {name}")
         _, feat1, feat2, feat3 = self.backbone.forward(x)
-        #check_nan(feat1, "backbone.feat1")
-        #check_nan(feat2, "backbone.feat2")
-        #check_nan(feat3, "backbone.feat3")
         _, X, Y, Z = self.neck.forward(feat1, feat2, feat3)
-        #check_nan(X, "neck.X")
-        #check_nan(Y, "neck.Y")
-        #check_nan(Z, "neck.Z")
         xo, yo, zo = self.head.forward(X, Y, Z)
-        #check_nan(xo, "head.xo")
-        #check_nan(yo, "head.yo")
-        #check_nan(zo, "head.zo")
         return xo, yo, zo
 
     def save(self, modelFile, verbose=False):

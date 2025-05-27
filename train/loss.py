@@ -102,33 +102,31 @@ class DetectionLoss(object):
         predBoxDistribution = predBoxDistribution.permute(0, 2, 1).contiguous() # (batchSize, 80 * 80 + 40 * 40 + 20 * 20, regMax * 4)
         predClassScores = predClassScores.permute(0, 2, 1).contiguous() # (batchSize, 80 * 80 + 40 * 40 + 20 * 20, nc)
 
+        # ground truth preprocess
+        targets = self.preprocess(targets.to(self.mcfg.device), batchSize, scaleTensor=self.model.scaleTensor) # (batchSize, maxCount, 5)
+        gtLabels, gtBboxes = targets.split((1, 4), 2)  # cls=(batchSize, maxCount, 1), xyxy=(batchSize, maxCount, 4)
+        gtMask = gtBboxes.sum(2, keepdim=True).gt_(0.0)
+        
         # generate anchor points
         dtype = predClassScores.dtype
         # imgsz = torch.tensor(preds[0].shape[2:], device=self.mcfg.device, dtype=dtype) * self.layerStrides[0]  # (h, w)
         featShapes = [x.shape[2:] for x in preds]  # [(80, 80), (40, 40), (20, 20)]
         anchor_points, stride_tensor = makeAnchors(featShapes, self.layerStrides, 0.5)
-        # print shape
         anchor_points = anchor_points.to(self.mcfg.device)  # (h * w, 2)
         stride_tensor = stride_tensor.to(self.mcfg.device)  # (h * w, 1)
-        
-        # ground truth preprocess
-        targets = self.preprocess(targets.to(self.mcfg.device), batchSize, scaleTensor=self.model.scaleTensor) # (batchSize, maxCount, 5)
-        gtLabels, gtBboxes = targets.split((1, 4), 2)  # cls=(batchSize, maxCount, 1), xyxy=(batchSize, maxCount, 4)
-        gtMask = gtBboxes.sum(2, keepdim=True).gt_(0.0)
 
+        # 解码预测框
         proj = self.model.proj
-
-        ## 解码预测框
         predBboxes = bboxDecode(anchor_points, predBoxDistribution, proj, xywh=False)
 
-        ## 正负样本分配
+        # 正负样本分配
         _, target_bboxes, target_scores, fg_mask, _ = self.assigner(
             predClassScores.detach().sigmoid(), (predBboxes.detach() * stride_tensor).type(gtBboxes.dtype), anchor_points * stride_tensor, gtLabels, gtBboxes, gtMask
         )
 
         target_scores_sum = max(target_scores.sum(), 1.0)
-        ## 损失计算
 
+        # 损失计算
         if fg_mask.sum():
             target_bboxes /= stride_tensor
             loss_box, loss_dfl = self.bboxLoss(
@@ -137,13 +135,11 @@ class DetectionLoss(object):
             loss[0] = loss_box
             loss[2] = loss_dfl
 
-        ## 分类损失
+        # 分类损失
         loss_cls = self.bce(predClassScores, target_scores.to(dtype)).sum() / target_scores_sum
         loss[1] = loss_cls
 
-        ####
-        # raise NotImplementedError("DetectionLoss::__call__")
-        print("loss[0]:", loss[0].item(), "loss[1]:", loss[1].item(), "loss[2]:", loss[2].item())
+        # print("loss[0]:", loss[0].item(), "loss[1]:", loss[1].item(), "loss[2]:", loss[2].item())
 
         loss[0] *= self.mcfg.lossWeights[0]  # box
         loss[1] *= self.mcfg.lossWeights[1]  # cls
