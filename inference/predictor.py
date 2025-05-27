@@ -46,8 +46,8 @@ class DetectionPredictor(object):
         results = nonMaxSuppression(
             predClassScores=predClassScores,
             predBboxes=predBboxes,
-            scoreThres=0.2,
-            iouThres=0.4,
+            scoreThres=0.2, # 0.2
+            iouThres=0.4, # 0.4
             maxDetect=50,
         )
 
