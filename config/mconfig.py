@@ -49,18 +49,20 @@ class ModelConfig(object):
         #self.trainSelectedClasses = None
         #self.distilSelectedClasses = None
         #self.checkpointModelFile = None
+
+        # for swin transformer
         self.talTopk = 10
         self.lossWeights = (7.5, 0.5, 1.5)  # box, cls, dfl
         self.startEpoch = 0
         self.maxEpoch = 500
         self.backboneFreezeEpochs = []
         self.distilEpochs = []
-        self.batchSize = 8  # batch size 32 not work
+        self.batchSize = 16  # batch size 32 not work
         self.optimizerType = "AdamW"
         self.optimizerMomentum = 0.9
-        self.optimizerWeightDecay = 0.05
+        self.optimizerWeightDecay = 0.01
         self.schedulerType = "COS"
-        self.baseLearningRate = 5e-5
+        self.baseLearningRate = 1e-4
         self.minLearningRate = self.baseLearningRate * 1e-2
         self.epochValidation = True
         self.trainSelectedClasses = None
