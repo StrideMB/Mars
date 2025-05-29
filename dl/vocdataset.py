@@ -10,6 +10,9 @@ from functools import partial
 from misc.log import log
 from misc import img, xml
 from dl.aug import DataAugmentationProcessor
+# add
+import cv2
+import PIL.Image as Image
 
 
 class VocDataset(Dataset):
@@ -136,11 +139,113 @@ class VocDataset(Dataset):
         if self.isTest:
             imageData, boxList, tinfo = self.augp.processSimple(image, boxList)
         else:
-            imageData, boxList, tinfo = self.augp.processEnhancement(image, boxList)
-
+            #use_mosaic = np.random.rand() < 0.5
+            use_mosaic = True  # disable mosaic for now
+            if use_mosaic:
+                imageData, boxList = self.mosaic(ii)
+            else:
+                imageData, boxList, tinfo = self.augp.processEnhancement(image, boxList)
+                Image.fromarray(imageData.astype(np.uint8)).save("enhancement.jpg")
+            
+            
         imageData, labels = self.postprocess(imageData, boxList)
         if not self.fullInfo:
             return imageData, labels
 
         tinfo.imgFile = imgFile
         return imageData, labels, tinfo, image
+
+        ## mixup augmentation
+            #if np.random.rand() < 0.5:
+                #mix_idx = np.random.randint(0, len(self.imageFiles))
+                #mix_img = img.loadRGBImage(self.imageFiles[mix_idx])
+                #mix_box = xml.XmlBbox.loadXmlObjectList(self.annotationFiles[mix_idx], self.classList, selectedClasses=self.selectedClasses, asArray=True)
+                #mix_img_data, mix_box, _ = self.augp.processEnhancement(mix_img, mix_box)
+
+                ## mixup image
+                #alpha = 0.2
+                #lam = np.random.beta(alpha, alpha)
+                #imageData = lam * imageData + (1 - lam) * mix_img_data
+                #boxList = np.concatenate((boxList, mix_box), axis=0)
+    
+    def mosaic(self, index):
+        input_h, input_w = self.inputShape
+        s = input_h  # 假设输入是正方形，使用高度作为基准
+    
+        # 随机生成mosaic中心点
+        yc = int(random.uniform(0, 2 * s))
+        xc = int(random.uniform(0, 2 * s))
+    
+        # 创建2倍大小的画布
+        mosaic_img = None
+        mosaic_boxes = []
+    
+        # 获取3个额外的随机索引
+        indices = [index] + [random.randint(0, len(self.imageFiles) - 1) for _ in range(3)]
+    
+        for i in range(4):
+            # 加载图像和标注
+            idx = indices[i]
+            img_path = self.imageFiles[idx]
+            ann_path = self.annotationFiles[idx]
+        
+            img_ = img.loadRGBImage(img_path)
+            box_ = xml.XmlBbox.loadXmlObjectList(ann_path, self.classList, 
+                                               selectedClasses=self.selectedClasses, 
+                                               asArray=True)
+        
+            # 数据增强处理
+            img_, box_, _ = self.augp.processEnhancement(img_, box_)
+            box_ = box_.astype(np.float32)  # 确保是float类型
+        
+            h, w = img_.shape[:2]
+        
+            # 计算在mosaic中的位置
+            if i == 0:  # top left
+                if mosaic_img is None:
+                    mosaic_img = np.full((s * 2, s * 2, img_.shape[2]), 114, dtype=np.uint8)
+                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h
+            elif i == 1:  # top right
+                x1a, y1a, x2a, y2a = xc, max(yc - h, 0), min(xc + w, s * 2), yc
+                x1b, y1b, x2b, y2b = 0, h - (y2a - y1a), min(w, x2a - x1a), h
+            elif i == 2:  # bottom left
+                x1a, y1a, x2a, y2a = max(xc - w, 0), yc, xc, min(s * 2, yc + h)
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), 0, w, min(y2a - y1a, h)
+            elif i == 3:  # bottom right
+                x1a, y1a, x2a, y2a = xc, yc, min(xc + w, s * 2), min(s * 2, yc + h)
+                x1b, y1b, x2b, y2b = 0, 0, min(w, x2a - x1a), min(y2a - y1a, h)
+        
+            # 将图像放置到mosaic画布上
+            mosaic_img[y1a:y2a, x1a:x2a] = img_[y1b:y2b, x1b:x2b]
+        
+            # 计算padding并更新box坐标
+            padw = x1a - x1b
+            padh = y1a - y1b
+        
+            if box_.shape[0] > 0:
+                # 更新box坐标：加上padding偏移
+                box_[:, [0, 2]] += padw  # x坐标
+                box_[:, [1, 3]] += padh  # y坐标
+                mosaic_boxes.append(box_)
+    
+        # 合并所有boxes
+        if mosaic_boxes:
+            mosaic_boxes = np.concatenate(mosaic_boxes, axis=0)
+            # 限制box坐标在mosaic图像范围内
+            mosaic_boxes[:, 0:4:2] = np.clip(mosaic_boxes[:, 0:4:2], 0, s * 2)  # x坐标
+            mosaic_boxes[:, 1:4:2] = np.clip(mosaic_boxes[:, 1:4:2], 0, s * 2)  # y坐标
+        else:
+            mosaic_boxes = np.zeros((0, 5), dtype=np.float32)
+    
+        # 将mosaic图像resize回原始输入大小
+        mosaic_img = cv2.resize(mosaic_img, (input_w, input_h))
+        #Image.fromarray(mosaic_img.astype(np.uint8)).save("mosaic.jpg")
+    
+        # 相应地缩放box坐标
+        scale_x = input_w / (s * 2)
+        scale_y = input_h / (s * 2)
+        mosaic_boxes[:, [0, 2]] *= scale_x
+        mosaic_boxes[:, [1, 3]] *= scale_y
+    
+        return mosaic_img, mosaic_boxes
