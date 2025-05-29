@@ -140,13 +140,11 @@ class VocDataset(Dataset):
             imageData, boxList, tinfo = self.augp.processSimple(image, boxList)
         else:
             #use_mosaic = np.random.rand() < 0.5
-            use_mosaic = True  # disable mosaic for now
+            use_mosaic = False  # disable mosaic for now
             if use_mosaic:
                 imageData, boxList = self.mosaic(ii)
             else:
                 imageData, boxList, tinfo = self.augp.processEnhancement(image, boxList)
-                Image.fromarray(imageData.astype(np.uint8)).save("enhancement.jpg")
-            
             
         imageData, labels = self.postprocess(imageData, boxList)
         if not self.fullInfo:

@@ -9,6 +9,8 @@ class MarsOptimizerFactory(object):
         match mcfg.optimizerType:
             case "SGD":
                 return MarsOptimizerFactory.initSgdOptimizer(mcfg, model)
+            case "AdamW":
+                return MarsOptimizerFactory.initAdamWOptimizer(mcfg, model)
             case other:
                 raise ValueError("Invalid optimizer type: {}".format(mcfg.optimizerType))
 
@@ -35,6 +37,20 @@ class MarsOptimizerFactory(object):
             lr=mcfg.baseLearningRate,
             momentum=mcfg.optimizerMomentum,
             nesterov=True,
+        )
+        opt.add_param_group({"params": weights, "weight_decay": mcfg.optimizerWeightDecay})
+        opt.add_param_group({"params": bias})
+        return opt
+    
+    @staticmethod
+    def initAdamWOptimizer(mcfg, model):
+        weights, bnWeights, bias = MarsOptimizerFactory.getModelParameterGroups(model)
+        opt = optim.AdamW(
+            bnWeights,
+            lr=mcfg.baseLearningRate,
+            betas=(mcfg.optimizerMomentum, 0.999),
+            weight_decay=0.0,
+            eps=1e-8
         )
         opt.add_param_group({"params": weights, "weight_decay": mcfg.optimizerWeightDecay})
         opt.add_param_group({"params": bias})

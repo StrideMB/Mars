@@ -6,6 +6,7 @@ from misc.bbox import makeAnchors
 from model.base.backbone import Backbone
 from model.base.neck import Neck
 from model.base.head import DetectHead
+from model.base.swintransformer import SwinBackbone
 
 
 class YoloModelPhaseSetup(object):
@@ -47,7 +48,7 @@ class YoloModel(nn.Module):
 
         # model layes
         w, r, n = YoloModelPhaseSetup.getModelWRN(mcfg.phase)
-        self.backbone = Backbone(w, r, n)
+        self.backbone = SwinBackbone(w, r, n)
         self.neck = Neck(w, r, n)
         self.head = DetectHead(w, r, self.mcfg.nc, self.mcfg.regMax)
 
