@@ -38,8 +38,8 @@ def mcfg(tags):
 
     if "distillation" in tags:
         mcfg.modelName = "distillation"
-        mcfg.checkpointModelFile = "/home/zxh/mars/zxh/c1.nano.teacher/__cache__/best_weights.pth"
-        mcfg.teacherModelFile = "/home/zxh/mars/zxh/c1.nano.teacher/__cache__/best_weights.pth"
+        mcfg.checkpointModelFile = "/home/zxh/mars/run_root/zxh/c1.nano.teacher/__cache__/best_weights.pth"
+        mcfg.teacherModelFile = "/home/zxh/mars/run_root/zxh/c1.nano.teacher/__cache__/best_weights.pth"
         mcfg.distilLossWeights = (1.0, 0.05, 0.001)
         mcfg.maxEpoch = 100
         mcfg.backboneFreezeEpochs = [x for x in range(0, 25)]

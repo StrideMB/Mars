@@ -1,5 +1,5 @@
 import torch
-from overrides import override # this could be removed since Python 3.12
+#from overrides import override # this could be removed since Python 3.12
 import torch.nn.functional as F
 from train.loss import DetectionLoss
 
@@ -9,11 +9,11 @@ class DistillationDetectionLoss(object):
         self.mcfg = mcfg
         self.histMode = False
         self.detectionLoss = DetectionLoss(mcfg, model)
-        self.cwdLoss = CWDLoss(self.mcfg.device)
-        self.respLoss = ResponseLoss(self.mcfg.device, self.mcfg.nc, self.mcfg.teacherClassIndexes)
-        raise NotImplementedError("DistillationDetectionLoss::__init__")
+        #self.cwdLoss = CWDLoss(self.mcfg.device)
+        #self.respLoss = ResponseLoss(self.mcfg.device, self.mcfg.nc, self.mcfg.teacherClassIndexes)
+        #raise NotImplementedError("DistillationDetectionLoss::__init__")
 
-    @override
+    #@override
     def __call__(self, rawPreds, batch):
         """
         rawPreds[0] & rawPreds[1] shape: (
@@ -38,8 +38,8 @@ class DistillationDetectionLoss(object):
 
         loss = torch.zeros(3, device=self.mcfg.device)  # original, cwd distillation, response distillation
         loss[0] = self.detectionLoss(sresponse, batch) * self.mcfg.distilLossWeights[0]  # original
-        loss[1] = self.cwdLoss(sfeats, tfeats) * self.mcfg.distilLossWeights[1]  # cwd distillation
-        loss[2] = self.respLoss(sresponse, tresponse) * self.mcfg.distilLossWeights[2]  # response distillation
+        #loss[1] = self.cwdLoss(sfeats, tfeats) * self.mcfg.distilLossWeights[1]  # cwd distillation
+        #loss[2] = self.respLoss(sresponse, tresponse) * self.mcfg.distilLossWeights[2]  # response distillation
 
         return loss.sum()
 
@@ -56,5 +56,3 @@ class ResponseLoss(object):
         loss = 0.0
         cls_start = -self.nc
         
-        for s_map, t_map in zip(sresponse, tresponse):
-            s_map = s_map[:, cls_star
