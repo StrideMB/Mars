@@ -27,5 +27,8 @@ class MarsModelFactory(object):
         modelClass = module.modelClass()
         model = modelClass(mcfg)
         model.load(modelFile)
+        print(model)
+        from torchinfo import summary
+        summary(model, (1, 3, 640, 640), device=mcfg.device)
         log.inf("Mars pretrained model created: [{}]".format(mcfg.modelName))
         return model.to(mcfg.device)
