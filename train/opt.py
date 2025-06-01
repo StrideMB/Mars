@@ -41,7 +41,8 @@ class MarsOptimizerFactory(object):
         opt.add_param_group({"params": weights, "weight_decay": mcfg.optimizerWeightDecay})
         opt.add_param_group({"params": bias})
         return opt
-    
+
+    # add AdamW optimizer 
     @staticmethod
     def initAdamWOptimizer(mcfg, model):
         weights, bnWeights, bias = MarsOptimizerFactory.getModelParameterGroups(model)

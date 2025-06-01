@@ -115,18 +115,18 @@ class DetectionLoss(object):
         anchor_points = anchor_points.to(self.mcfg.device)  # (h * w, 2)
         stride_tensor = stride_tensor.to(self.mcfg.device)  # (h * w, 1)
 
-        # 解码预测框
+        # decode bboxes
         proj = self.model.proj
         predBboxes = bboxDecode(anchor_points, predBoxDistribution, proj, xywh=False)
 
-        # 正负样本分配
+        # assgn targets to predictions
         _, target_bboxes, target_scores, fg_mask, _ = self.assigner(
             predClassScores.detach().sigmoid(), (predBboxes.detach() * stride_tensor).type(gtBboxes.dtype), anchor_points * stride_tensor, gtLabels, gtBboxes, gtMask
         )
 
         target_scores_sum = max(target_scores.sum(), 1.0)
 
-        # 损失计算
+        # compute box and dfl loss
         if fg_mask.sum():
             target_bboxes /= stride_tensor
             loss_box, loss_dfl = self.bboxLoss(
@@ -135,7 +135,7 @@ class DetectionLoss(object):
             loss[0] = loss_box
             loss[2] = loss_dfl
 
-        # 分类损失
+        # classification loss
         loss_cls = self.bce(predClassScores, target_scores.to(dtype)).sum() / target_scores_sum
         loss[1] = loss_cls
 
