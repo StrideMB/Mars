@@ -20,7 +20,7 @@ class ImageTransformedInfo(object):
 
 
 class DataAugmentationProcessor(object):
-    def __init__(self, inputShape, jitter=0.3, rescalef=(0.25, 2), flipProb=0.5, huef=0.1, satf=0.7, valf=0.4):
+    def __init__(self, inputShape, jitter=0, rescalef=(2, 2), flipProb=0.5, huef=0.1, satf=0.7, valf=0.4): # (0.25, 2) 0.3
         self.inputShape = inputShape
         self.jitter = jitter
         self.rescalef = rescalef
@@ -69,5 +69,6 @@ class DataAugmentationProcessor(object):
         # rescale boxes accordingly
         boxList = rescaleBoxes(boxList, oriWidth, oriHeight, scaledWidth, scaledHeight, targetWidth, targetHeight, xoffset, yoffset, flipFlag)
         tinfo = ImageTransformedInfo(oriWidth, oriHeight, scaledWidth, scaledHeight, targetWidth, targetHeight, xoffset, yoffset, flipFlag)
+        tinfo = []
 
         return imageData, boxList, tinfo

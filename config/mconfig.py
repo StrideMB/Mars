@@ -28,51 +28,32 @@ class ModelConfig(object):
 
         # distillation model setup
         self.teacherModelFile = None
-        self.distilLossWeights = None
+        self.distilLossWeights = (1.0, 0.05, 0.001)
         self.teacherClassIndexes = None
 
         # train setup
-        #self.talTopk = 10
-        #self.lossWeights = (7.5, 0.5, 1.5) # box, cls, dfl
-        #self.startEpoch = 0
-        #self.maxEpoch = 200
-        #self.backboneFreezeEpochs = []
-        #self.distilEpochs = []
-        #self.batchSize = 16 # batch size 32 not work
-        #self.optimizerType = "SGD"
-        #self.optimizerMomentum = 0.937
-        #self.optimizerWeightDecay = 5e-4
-        #self.schedulerType = "COS"
-        #self.baseLearningRate = 1e-2
-        #self.minLearningRate = self.baseLearningRate * 1e-2
-        #self.epochValidation = True
-        #self.trainSelectedClasses = None
-        #self.distilSelectedClasses = None
-        #self.checkpointModelFile = None
-
-        # for swin transformer
         self.talTopk = 10
-        self.lossWeights = (7.5, 0.5, 1.5)  # box, cls, dfl
+        self.lossWeights = (7.5, 0.5, 1.5) # box, cls, dfl
         self.startEpoch = 0
-        self.maxEpoch = 500
+        self.maxEpoch = 200
         self.backboneFreezeEpochs = []
         self.distilEpochs = []
-        self.batchSize = 16  # batch size 32 not work
-        self.optimizerType = "AdamW"
-        self.optimizerMomentum = 0.9
-        self.optimizerWeightDecay = 0.01
+        self.batchSize = 16 
+        self.optimizerType = "SGD"
+        self.optimizerMomentum = 0.937
+        self.optimizerWeightDecay = 5e-4
         self.schedulerType = "COS"
-        self.baseLearningRate = 1e-4
+        self.baseLearningRate = 1e-2
         self.minLearningRate = self.baseLearningRate * 1e-2
         self.epochValidation = True
         self.trainSelectedClasses = None
         self.distilSelectedClasses = None
-        self.checkpointModelFile = None
+        self.checkpointModelFile = None 
 
         # eval setup
         self.testSelectedClasses = None
         self.minIou = 0.5
-        self.paintImages = True
+        self.paintImages = False
 
         # dataset splits
         self.trainSplitName = "train"

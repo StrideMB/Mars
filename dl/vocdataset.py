@@ -139,12 +139,26 @@ class VocDataset(Dataset):
         if self.isTest:
             imageData, boxList, tinfo = self.augp.processSimple(image, boxList)
         else:
+            imageData, boxList, tinfo = self.augp.processEnhancement(image, boxList)
             #use_mosaic = np.random.rand() < 0.5
-            use_mosaic = False  # disable mosaic for now
-            if use_mosaic:
-                imageData, boxList = self.mosaic(ii)
-            else:
-                imageData, boxList, tinfo = self.augp.processEnhancement(image, boxList)
+            #imageData, boxList, tinfo = self.augp.processEnhancement(image, boxList)
+            #mix_idx = np.random.randint(0, len(self.imageFiles))
+            #mix_img = img.loadRGBImage(self.imageFiles[mix_idx])
+            #mix_box = xml.XmlBbox.loadXmlObjectList(self.annotationFiles[mix_idx], self.classList, selectedClasses=self.selectedClasses, asArray=True)
+            #mix_img_data, mix_box, _ = self.augp.processEnhancement(mix_img, mix_box)
+
+            ## mixup image
+            #alpha = 0.5 
+            #lam = np.random.beta(alpha, alpha)
+            #imageData = lam * imageData + (1 - lam) * mix_img_data
+            #Image.fromarray(imageData.astype(np.uint8)).save("mixup.jpg")
+            #import pdb; pdb.set_trace()
+            #boxList = np.concatenate((boxList, mix_box), axis=0)
+            #use_mosaic = True  # disable mosaic for now
+            #if use_mosaic:
+            #    imageData, boxList = self.create_mosaic(image, boxList)
+            #else:
+            #    imageData, boxList, tinfo = self.augp.processEnhancement(image, boxList)
             
         imageData, labels = self.postprocess(imageData, boxList)
         if not self.fullInfo:
@@ -246,4 +260,85 @@ class VocDataset(Dataset):
         mosaic_boxes[:, [0, 2]] *= scale_x
         mosaic_boxes[:, [1, 3]] *= scale_y
     
+        return mosaic_img, mosaic_boxes
+
+    def load_image_and_labels(self, index, img_paths, labels_dict, img_size):
+        # 读取图像和其对应的标签
+        img_path = img_paths[index]
+        img = cv2.imread(img_path)
+        h0, w0 = img.shape[:2]
+        r = img_size / max(h0, w0)
+        img = cv2.resize(img, (int(w0 * r), int(h0 * r)))
+
+        labels = labels_dict[img_path].copy()  # shape: [num_obj, 5], 格式为[class, x_center, y_center, w, h]
+        labels[:, 1:] *= r  # 缩放坐标
+
+        return img, labels
+
+    def create_mosaic(self, image, boxList):
+        input_h, input_w = self.inputShape
+        s = input_h  # 输入图像高度
+
+        # 随机确定 mosaic 中心点坐标
+        yc = int(random.uniform(s * 0.5, s * 1.5))
+        xc = int(random.uniform(s * 0.5, s * 1.5))
+
+        # 创建2倍大小的画布
+        mosaic_img = np.full((s * 2, s * 2, 3), 114, dtype=np.uint8)
+        mosaic_boxes = []
+
+        indices = [random.randint(0, len(self.imageFiles) - 1) for _ in range(3)]
+        indices = [self.imageFiles.index(image.filename)] + indices  # 包含当前图像
+
+        for i, idx in enumerate(indices):
+            img_path = self.imageFiles[idx]
+            ann_path = self.annotationFiles[idx]
+
+            img_ = img.loadRGBImage(img_path)
+            box_ = xml.XmlBbox.loadXmlObjectList(ann_path, self.classList, selectedClasses=self.selectedClasses, asArray=True)
+            img_, box_, _ = self.augp.processEnhancement(img_, box_)  # 图像增强
+            h, w = img_.shape[:2]
+
+            # 放置位置计算
+            if i == 0:  # top-left
+                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h
+            elif i == 1:  # top-right
+                x1a, y1a, x2a, y2a = xc, max(yc - h, 0), min(xc + w, s * 2), yc
+                x1b, y1b, x2b, y2b = 0, h - (y2a - y1a), min(w, x2a - x1a), h
+            elif i == 2:  # bottom-left
+                x1a, y1a, x2a, y2a = max(xc - w, 0), yc, xc, min(s * 2, yc + h)
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), 0, w, min(y2a - y1a, h)
+            else:  # bottom-right
+                x1a, y1a, x2a, y2a = xc, yc, min(xc + w, s * 2), min(s * 2, yc + h)
+                x1b, y1b, x2b, y2b = 0, 0, min(w, x2a - x1a), min(h, y2a - y1a)
+
+            mosaic_img[y1a:y2a, x1a:x2a] = img_[y1b:y2b, x1b:x2b]
+
+            # 偏移 box 坐标
+            padw = x1a - x1b
+            padh = y1a - y1b
+            if box_.shape[0] > 0:
+                box_[:, [0, 2]] += padw
+                box_[:, [1, 3]] += padh
+                mosaic_boxes.append(box_)
+
+        if mosaic_boxes:
+            mosaic_boxes = np.concatenate(mosaic_boxes, axis=0)
+            # 限制坐标范围
+            mosaic_boxes[:, [0, 2]] = np.clip(mosaic_boxes[:, [0, 2]], 0, s * 2)
+            mosaic_boxes[:, [1, 3]] = np.clip(mosaic_boxes[:, [1, 3]], 0, s * 2)
+        else:
+            mosaic_boxes = np.zeros((0, 5), dtype=np.float32)
+
+        # 缩放回输入大小
+        mosaic_img = cv2.resize(mosaic_img, (input_w, input_h))
+        scale_x = input_w / (s * 2)
+        scale_y = input_h / (s * 2)
+        mosaic_boxes = mosaic_boxes.astype(np.float32)
+        mosaic_boxes[:, [0, 2]] *= scale_x
+        mosaic_boxes[:, [1, 3]] *= scale_y
+
+        Image.fromarray(mosaic_img.astype(np.uint8)).save("mosaic.jpg")
+        import pdb; pdb.set_trace()
         return mosaic_img, mosaic_boxes

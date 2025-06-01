@@ -3,8 +3,8 @@ from engine.engine import MarsEngine
 
 
 if __name__ == "__main__":
-    mode = "pipe"
-    #mode = "eval"
+    #mode = "pipe"
+    mode = "eval"
     nobuf = True
 
     for i in range(len(sys.argv)):
@@ -20,12 +20,12 @@ if __name__ == "__main__":
 
     MarsEngine(
         mode=mode,
-        cfgname="c1.nano.full.swin",
-        # cfgname="c1.nano.full.cuda@3",
-        # cfgname="c1.nano.teacher",
-        # cfgname="c1.nano.distillation",
-        # cfgname="c1.nano.pretrain",
-        # cfgname="c1.nano.pretrain.swin-transformer",
+        #cfgname="c1.nano.full",
+        #cfgname="c1.nano.teacher",
+        #cfgname="c1.nano.distillation",
+        cfgname="c1.nano.full_pretrain",
+        #cfgname="c1.nano.swin_transformer",
+        #cfgname="c1.nano.mosaic",
         root="/home/zxh/mars/run_root", # 注意项目运行root不要放在代码路径下
         nobuf=nobuf,
     ).run()

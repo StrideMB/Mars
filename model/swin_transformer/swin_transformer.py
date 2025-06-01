@@ -456,7 +456,7 @@ class PatchMerging(nn.Module):
         return x
 
 
-class SwinBackbone(nn.Module):
+class SwinTransformer(nn.Module):
     """
     Swin Transformer backbone using nn.Sequential
     """
