@@ -458,7 +458,7 @@ class PatchMerging(nn.Module):
 
 class SwinTransformer(nn.Module):
     """
-    Swin Transformer backbone using nn.Sequential
+    Swin Transformer backbone
     """
     def __init__(self, w, r, n):
         super().__init__()

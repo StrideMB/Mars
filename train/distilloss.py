@@ -1,14 +1,16 @@
 import torch
 from overrides import override # this could be removed since Python 3.12
+import torch.nn.functional as F
+from train.loss import DetectionLoss
 
 
 class DistillationDetectionLoss(object):
     def __init__(self, mcfg, model):
         self.mcfg = mcfg
         self.histMode = False
-        # self.detectionLoss = DetectionLoss(mcfg, model)
-        # self.cwdLoss = CWDLoss(self.mcfg.device)
-        # self.respLoss = ResponseLoss(self.mcfg.device, self.mcfg.nc, self.mcfg.teacherClassIndexes)
+        self.detectionLoss = DetectionLoss(mcfg, model)
+        self.cwdLoss = CWDLoss(self.mcfg.device)
+        self.respLoss = ResponseLoss(self.mcfg.device, self.mcfg.nc, self.mcfg.teacherClassIndexes)
         raise NotImplementedError("DistillationDetectionLoss::__init__")
 
     @override
@@ -40,3 +42,19 @@ class DistillationDetectionLoss(object):
         loss[2] = self.respLoss(sresponse, tresponse) * self.mcfg.distilLossWeights[2]  # response distillation
 
         return loss.sum()
+
+class ResponseLoss(object):
+    def __init__(self, device, nc, teacherClassIndexes, temperature=1.0):
+        self.device = device
+        self.nc = nc
+        self.teacherClassIndexes = teacherClassIndexes
+        self.temperature = temperature
+
+    def __call__(self, sresponse, tresponse):
+        """
+        """
+        loss = 0.0
+        cls_start = -self.nc
+        
+        for s_map, t_map in zip(sresponse, tresponse):
+            s_map = s_map[:, cls_star
