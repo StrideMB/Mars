@@ -41,9 +41,11 @@ def mcfg(tags):
         mcfg.checkpointModelFile = "/home/zxh/mars/run_root/zxh/c1.nano.teacher/__cache__/best_weights.pth"
         mcfg.teacherModelFile = "/home/zxh/mars/run_root/zxh/c1.nano.teacher/__cache__/best_weights.pth"
         #mcfg.distilLossWeights = (1.0, 0.05, 0.001) # detection, cwd, response
-        mcfg.distilLossWeights = (1.0, 0.05, 0.001)
+        mcfg.distilLossWeights = (10.0, 0.05, 0.001)
+        mcfg.temperature1 = 1.0  # cwd distillation temperature
+        mcfg.temperature2 = 3.0 # response distillation temperature
         mcfg.maxEpoch = 100
-        mcfg.backboneFreezeEpochs = [x for x in range(0, 25)]
+        mcfg.backboneFreezeEpochs = [x for x in range(0, 100)]
         mcfg.epochValidation = False # DO NOT MODIFY
         mcfg.trainSplitName = "small" # DO NOT MODIFY
         mcfg.teacherClassIndexes = [x for x in range(0, 10)] # DO NOT MODIFY

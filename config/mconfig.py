@@ -30,6 +30,8 @@ class ModelConfig(object):
         self.teacherModelFile = None
         self.distilLossWeights = (1.0, 0.05, 0.001)
         self.teacherClassIndexes = None
+        self.temperature1 = 1.0  # cwd distillation temperature
+        self.temperature2 = 1.0  # response distillation temperature
 
         # train setup
         self.talTopk = 10

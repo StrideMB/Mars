@@ -20,7 +20,7 @@ class ImageTransformedInfo(object):
 
 
 class DataAugmentationProcessor(object):
-    def __init__(self, inputShape, jitter=0, rescalef=(2, 2), flipProb=0.5, huef=0.1, satf=0.7, valf=0.4): # (0.25, 2) 0.3
+    def __init__(self, inputShape, jitter=0.3, rescalef=(0.25, 2), flipProb=0.5, huef=0.1, satf=0.7, valf=0.4):
         self.inputShape = inputShape
         self.jitter = jitter
         self.rescalef = rescalef
