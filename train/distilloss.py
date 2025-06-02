@@ -77,7 +77,6 @@ class ResponseLoss(object):
         self.teacherClassIndexes = teacherClassIndexes
         self.temperature = temperature
 
-
     def __call__(self, sresponse, tresponse):
         """
         sresponse: list of tensors, each tensor shape: (B, regMax * 4 + nc, H, W)

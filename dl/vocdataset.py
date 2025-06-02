@@ -180,7 +180,9 @@ class VocDataset(Dataset):
                 #imageData = lam * imageData + (1 - lam) * mix_img_data
                 #boxList = np.concatenate((boxList, mix_box), axis=0)
 
-    # bad effect, not used
+    #########################################
+    #          bad effect, not used         # 
+    #########################################
     def mosaic(self, index):
         input_h, input_w = self.inputShape
         s = input_h  # 假设输入是正方形，使用高度作为基准
