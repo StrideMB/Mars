@@ -40,8 +40,9 @@ def mcfg(tags):
         mcfg.modelName = "distillation"
         mcfg.checkpointModelFile = "/home/zxh/mars/run_root/zxh/c1.nano.teacher/__cache__/best_weights.pth"
         mcfg.teacherModelFile = "/home/zxh/mars/run_root/zxh/c1.nano.teacher/__cache__/best_weights.pth"
-        mcfg.distilLossWeights = (1.0, 0.05, 0.001) # detection, cwd, response
-        mcfg.maxEpoch = 10
+        #mcfg.distilLossWeights = (1.0, 0.05, 0.001) # detection, cwd, response
+        mcfg.distilLossWeights = (1.0, 0.05, 0.001)
+        mcfg.maxEpoch = 100
         mcfg.backboneFreezeEpochs = [x for x in range(0, 25)]
         mcfg.epochValidation = False # DO NOT MODIFY
         mcfg.trainSplitName = "small" # DO NOT MODIFY
