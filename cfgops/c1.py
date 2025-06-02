@@ -28,6 +28,12 @@ def mcfg(tags):
         mcfg.maxEpoch = 200
         mcfg.paintImages = True
 
+    if "full_pretrain" in tags:
+        mcfg.modelName = "base"
+        mcfg.pretrainedBackboneUrl = "file://{}".format(pretrainedFile)
+        mcfg.maxEpoch = 200
+        mcfg.backboneFreezeEpochs = [x for x in range(0, 100)]
+
     if "teacher" in tags:
         mcfg.modelName = "base"
         mcfg.pretrainedBackboneUrl = "file://{}".format(pretrainedFile)
@@ -44,17 +50,11 @@ def mcfg(tags):
         mcfg.distilLossWeights = (10.0, 0.05, 0.001)
         mcfg.temperature1 = 1.0  # cwd distillation temperature
         mcfg.temperature2 = 3.0 # response distillation temperature
-        mcfg.maxEpoch = 100
+        mcfg.maxEpoch = 20
         mcfg.backboneFreezeEpochs = [x for x in range(0, 100)]
         mcfg.epochValidation = False # DO NOT MODIFY
         mcfg.trainSplitName = "small" # DO NOT MODIFY
         mcfg.teacherClassIndexes = [x for x in range(0, 10)] # DO NOT MODIFY
-    
-    if "full_pretrain" in tags:
-        mcfg.modelName = "base"
-        mcfg.pretrainedBackboneUrl = "file://{}".format(pretrainedFile)
-        mcfg.maxEpoch = 200
-        mcfg.backboneFreezeEpochs = [x for x in range(0, 100)]
 
     if "swin_transformer" in tags:
         mcfg.modelName = "swin_transformer"

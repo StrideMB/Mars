@@ -21,9 +21,9 @@ if __name__ == "__main__":
     MarsEngine(
         mode=mode,
         #cfgname="c1.nano.full",
+        #cfgname="c1.nano.full_pretrain",
         #cfgname="c1.nano.teacher",
         cfgname="c1.nano.distillation",
-        #cfgname="c1.nano.full_pretrain",
         #cfgname="c1.nano.swin_transformer",
         #cfgname="c1.nano.mosaic",
         root="/home/zxh/mars/run_root", # 注意项目运行root不要放在代码路径下
